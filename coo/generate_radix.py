@@ -29,52 +29,8 @@ def generate_header(order, datatypes):
 
     print("using namespace taco;")
 
-def generate_qsorts(permutation, kcutoff):
-    if kcutoff == len(permutation):
-        return
-    # Get the cmp function.
-    cmp_func = "cmp_"
-    for i in range(kcutoff, len(permutation)):
-        cmp_func += str(permutation[i])
 
-    ident = str(kcutoff) + "_" + cmp_func
-
-    if TIME_PASS:
-        print("\ttaco::util::Timer timer_" + ident + ";")
-        print("\ttimer_" + ident + ".start();")
-
-    print("\t// Use qsort to sort the subtrees")
-    if kcutoff > 0:
-        print("\tint qsort_start = 0;")
-        print("\tfor(int i = 1; i < c_size; i ++)")
-        print("\t{")
-        print("\t\tint qsort_same = 1;")
-        for i in range(kcutoff):
-            m = permutation[i]
-            fi = "if"
-            if i != 0:
-                fi = "else if"
-            print("\t\t"+ fi + "(C_coords[i].idx" + str(m) + " != C_coords[i - 1].idx" + str(m) + ") {")
-            print("\t\t\tqsort_same = 0;")
-            print("\t\t}")
-        # Sort
-        print("\t\tif (!qsort_same || i == c_size - 1) { // Sort if at the end of a segment")
-        print("\t\t\tqsort(&C_coords[qsort_start], (i - qsort_start), sizeof(struct coo_t), " + cmp_func + ");")
-        print("\t\t\tqsort_start = i;")
-        print("\t\t}")
-
-        print("\t}")
-    else:
-        print("\tqsort(C_coords, c_size, sizeof(struct coo_t), " + cmp_func + ");")
-   
-    if TIME_PASS:
-        print("\ttimer_" + ident + ".stop();")
-        print("\ttaco::util::TimeResults res_" + ident + " = timer_" + ident + ".getResult();")   
-        print("\tcout << \" | " + str(ident) + " \";")
-        print("\tcout << \" | \"<< res_" + ident + " ;")
-
-
-def generate_function(suffix, permutation, order, datatypes, dimensions, schedule, kcutoff):
+def generate_function(suffix, permutation, order, datatypes, dimensions, schedule):
     perm_str = ""
     for m in permutation:
         perm_str += str(m)
@@ -93,9 +49,6 @@ def generate_function(suffix, permutation, order, datatypes, dimensions, schedul
 
     # Generate the K-sadilla sorts
     generate_sorts(permutation, order, datatypes, dimensions, schedule)
-
-    # TODO: Generate the coo sorts
-    generate_qsorts(permutation, kcutoff)
 
     # Free things.
     if len(schedule) > 0:
@@ -116,7 +69,6 @@ def generate_function(suffix, permutation, order, datatypes, dimensions, schedul
 
 def generate(permutation, order, datatypes, dimensions, schedule):
     generate_header(order, datatypes)
-
     generate_function("", permutation, order, datatypes, dimensions, schedule, len(permutation))
 
 def generate_hist_sort(mode, datatypes):
@@ -194,7 +146,6 @@ def generate_fix(mode, fixed, datatypes):
     print("\t\tB" + str(mode) + "_count[idx" + str(mode) + "]--;")
     print("\t}")
     print("\tfree(bucket_" + ident + ");")
-    print("\tfree(B" + str(mode) + "_count);")
 
 
 # TODO There was a bad bug here
@@ -210,8 +161,8 @@ def generate_fix_and_sort(sort_item, datatypes):
         if TIME_PASS:
             print("\ttimer_" + ident + ".stop();")
             print("\ttaco::util::TimeResults res_" + ident + " = timer_" + ident + ".getResult();")   
-            print("\tcout << \" , " + str(sort_item) + " \";")
-            print("\tcout << \" , \"<< res_" + ident + " ;")
+            print("\tcout << \" | " + str(sort_item) + " \";")
+            print("\tcout << \" | \"<< res_" + ident + " ;")
 
         return
 
@@ -237,8 +188,8 @@ def generate_fix_and_sort(sort_item, datatypes):
     if TIME_PASS:
         print("\ttimer_" + ident + ".stop();")
         print("\ttaco::util::TimeResults res_" + ident + " = timer_" + ident + ".getResult();")   
-        print("\tcout << \" , " + str(sort_item) + " \";")
-        print("\tcout << \" , \"<< res_" + ident + " ;")
+        print("\tcout << \" | " + str(sort_item) + " \";")
+        print("\tcout << \" | \"<< res_" + ident + " ;")
 
 
 def generate_cmp(perm):
@@ -267,44 +218,19 @@ def generate_sorts(permutation, order, datatypes, dimensions, schedule):
         generate_fix_and_sort(sort_item,  datatypes)
 
 
-def get_schedule(permutation, num_levels):
+def get_schedule(permutation):
     schedule = []
-    current = []
-    fixed = []
-    for i in range(num_levels):
-        # Check if it needs to be sorted.
-        needs_sort = False
-        for j in range(i + 1, len(permutation)):
-            if permutation[j] < permutation[i]:
-                needs_sort = True
-
-        if needs_sort:
-            current.append(permutation[i])
-            if i < num_levels - 1:
-                continue
-
-        for j in range(len(current) - 1, -1, -1):
-            schedule.append( (current[j], fixed.copy()))
-
-        for mode in current:
-            fixed.append(mode)
-
-        fixed.append(permutation[i])
-
-        current = []
-
+    for m in permutation:
+        schedule = [(m, [])] + schedule
     return schedule
-
-
 
 def generate_all_functions(ORDER, datatypes, dims):
     from itertools import permutations
     order = [i for i in range(ORDER)]
     perms = permutations(order)
     for perm in perms:
-        for kcutoff in range(ORDER + 1):
-            schedule = get_schedule(perm, kcutoff)
-            generate_function("k" + str(kcutoff), perm, ORDER, datatypes, dims, schedule, kcutoff)
+        schedule = get_schedule(perm)
+        generate_function("all", perm, ORDER, datatypes, dims, schedule)
 
 def generate_all_cmp_functions(ORDER, datatypes, dims):
     from itertools import permutations
@@ -312,13 +238,13 @@ def generate_all_cmp_functions(ORDER, datatypes, dims):
     perms = permutations(order)
     generated = set([])
     for perm in perms:
-        for kcutoff in range(ORDER):
-            if perm[kcutoff:] not in generated:
-                generate_cmp(perm[kcutoff:])
-                generated.add(perm[kcutoff:])
+        kcutoff = 0
+        if perm[kcutoff:] not in generated:
+            generate_cmp(perm[kcutoff:])
+            generated.add(perm[kcutoff:])
 
 
-def generate_test_func(ORDER, datatypes):
+def generate_test_func(ORDER, datatypes, filename):
     print("""
 int main(int argc, char* argv[]) {
   char *p;
@@ -327,6 +253,7 @@ int main(int argc, char* argv[]) {
 
   long conv = strtol(argv[2], &p, 10);
   SPLIT = conv;
+
 
   // Read tensor data  
   int order = """ + str(ORDER) + """;
@@ -373,33 +300,36 @@ int main(int argc, char* argv[]) {
 
   stream.close();
 """)
-    from itertools import permutations
-    j = 0
     total = ""
     for i in range(ORDER):
         total += str(i)
+    from itertools import permutations
     order = [i for i in range(ORDER)]
     perms = permutations(order)
 
+    j = 0
     for perm in perms:
-        for kcutoff in range(ORDER + 1):
-            print("\t\tif(" + str(j) + " == SPLIT){")
-            ident = ""
-            for i in perm:
-                ident += str(i)
-            sched = get_schedule(perm, kcutoff)
+        kcutoff = ORDER
+        # for kcutoff in range(ORDER + 1):
+        print("\t\tif(" + str(j) + " == SPLIT){")
+        ident = ""
+        for i in perm:
+            ident += str(i)
+        sched = get_schedule(perm)
 
-            print("\t\t// " + str(perm))
-            print("\t\tfor(int i = 0; i < 100; i ++){")
-            print("\t\t\tcout << filename << \" | " + ident + " | " + str(kcutoff) + " | " + str(len(sched)) + "\" ;")
-            print("\t\t\tqsort(A, size, sizeof(struct coo_t), cmp_" + total + ");")
-            print ("\t\t\ttranspose_coo_" + ident + "_k" + str(kcutoff) + "(A, size, order, dimensions);")
-            print("\t\t\tcout << endl;")
-            print("\t\t}")
 
-            print()
-            print("\t\t}")
-            j += 1
+        print("\t\t// " + str(perm))
+        print("\t\tfor(int i = 0; i < 100; i ++){")
+        print("\t\t\tcout << filename << \" | " + ident + " | " + str(kcutoff) + " | " + str(len(sched)) + "\" ;")
+
+        print("\t\t\tqsort(A, size, sizeof(struct coo_t), cmp_" + total + ");")
+        print ("\t\t\ttranspose_coo_" + ident + "_all(A, size, order, dimensions);")
+        print("\t\t\tcout << endl;")
+        print("\t\t}")
+
+        print()
+        print("\t\t}")
+        j += 1
 
     print("\tfree(A);")
     print("\tfree(dimensions);")
@@ -409,13 +339,13 @@ TIME_ALL = True
 TIME_PASS = False
 
 def main():
-    ORDER = 5
+    ORDER = 3
     datatypes = ["int32_t" for i in range(ORDER)]
     datatypes.append("double")
     dims = [100 for i in range(ORDER)]
     generate_header(ORDER, datatypes)
     generate_all_cmp_functions(ORDER, datatypes, dims)
     generate_all_functions(ORDER, datatypes, dims)
-    generate_test_func(ORDER, datatypes)
+    generate_test_func(ORDER, datatypes, "./3tensor.tns")
 
 if __name__ == "__main__": main()
