@@ -62,9 +62,10 @@ def generate_qsorts(permutation, kcutoff):
         print("\t\t\tqsort(&C_coords[qsort_start], (i - qsort_start), sizeof(struct coo_t), " + cmp_func + ");")
         print("\t\t\tqsort_start = i;")
         print("\t\t}")
-        print("\t\tqsort(&C_coords[qsort_start], (c_size - qsort_start ), sizeof(struct coo_t), " + cmp_func + ");")
 
         print("\t}")
+        print("\tqsort(&C_coords[qsort_start], (c_size - qsort_start ), sizeof(struct coo_t), " + cmp_func + ");")
+
     else:
         print("\tqsort(C_coords, c_size, sizeof(struct coo_t), " + cmp_func + ");")
    
