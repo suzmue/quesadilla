@@ -1,0 +1,8 @@
+generate.py contains the code to generate all of the k-sadilla strategies and radix. This will print a file containing all of the functions to run and a main binary to load a tensor and test it. 
+
+A correctness check is included after the transpose is complete. The program exits on failure.
+
+There are three global vars you can change:
+TIME_ALL // Time the whole function
+TIME_PASS // Time each pass
+RADIX // Output LSD radix sort schedule, not k-sadilla schedule
