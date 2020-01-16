@@ -444,15 +444,17 @@ int main(int argc, char* argv[]) {
                 j += 1
 
     print("\tfree(A);")
+    print("\tfree(A_copy);")
+
     print("\tfree(dimensions);")
     print("}")
 
 TIME_ALL = True
 TIME_PASS = False
-RADIX = True
+RADIX = False
 
 def main():
-    ORDER = 3
+    ORDER = 4
     datatypes = ["int32_t" for i in range(ORDER)]
     datatypes.append("double")
     dims = [100 for i in range(ORDER)]
