@@ -372,6 +372,11 @@ int main(int argc, char* argv[]) {
   } while (std::getline(stream, line));
 
   stream.close();
+
+  // Copy the tensor to test correctness.
+  struct coo_t *A_copy = (coo_t*)malloc(sizeof(struct coo_t)*size);
+  memcpy(A_copy, A, sizeof(struct coo_t)*size);
+
 """)
     from itertools import permutations
     j = 0
@@ -388,6 +393,8 @@ int main(int argc, char* argv[]) {
             for i in perm:
                 ident += str(i)
             sched = get_schedule(perm, kcutoff)
+            print("\t\t// Sort the copy to the desired permutation.")
+            print("\t\t\tqsort(A_copy, size, sizeof(struct coo_t), cmp_" + ident + ");")
 
             print("\t\t// " + str(perm))
             print("\t\tfor(int i = 0; i < 100; i ++){")
@@ -395,6 +402,20 @@ int main(int argc, char* argv[]) {
             print("\t\t\tqsort(A, size, sizeof(struct coo_t), cmp_" + total + ");")
             print ("\t\t\ttranspose_coo_" + ident + "_k" + str(kcutoff) + "(A, size, order, dimensions);")
             print("\t\t\tcout << endl;")
+
+            print("\t\t\t// Check that it was permuted correctly.")
+            print("\t\t\tfor(int i = 0; i < size; i ++) {")
+            for i in range(ORDER):
+                print("\t\t\t\tif(A[i].idx" + str(i) + " != A_copy[i].idx" + str(i) + "){")
+                print("\t\t\t\t\tcout << \"Error permuting array: index incorrect: " + str(perm) + ": " + str(sched) + "\" << endl;")
+                print("\t\t\t\t\tbreak;")
+                print("\t\t\t\t}")
+            print("\t\t\t\tif(A[i].val != A_copy[i].val){")
+            print("\t\t\t\t\tcout << \"Error permuting array: value incorrect: " + str(perm) + ": " + str(sched) + "\" << endl;")
+            print("\t\t\t\t\tbreak;")
+            print("\t\t\t\t}")
+
+            print("\t\t\t}")
             print("\t\t}")
 
             print()
@@ -409,7 +430,7 @@ TIME_ALL = True
 TIME_PASS = False
 
 def main():
-    ORDER = 5
+    ORDER = 3
     datatypes = ["int32_t" for i in range(ORDER)]
     datatypes.append("double")
     dims = [100 for i in range(ORDER)]
