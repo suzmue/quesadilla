@@ -362,7 +362,7 @@ int main(int argc, char* argv[]) {
     for i in range(ORDER):
         print("\tlong idx" + str(i) + " = strtol(linePtr, &linePtr, 10);")
         print("\tA[size].idx" + str(i) + " = (int32_t)idx" + str(i) + " - 1;")
-        print("\tdimensions[" + str(i) + "] = std::max(dimensions[" + str(i) + "], (int)idx" + str(i) + " - 1);")
+        print("\tdimensions[" + str(i) + "] = std::max(dimensions[" + str(i) + "], (int)idx" + str(i) + ");")
     
     print("""
     double val = strtod(linePtr, &linePtr);
