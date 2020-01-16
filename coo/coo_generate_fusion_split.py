@@ -185,7 +185,7 @@ def generate_fix(mode, fixed, datatypes):
     print("\t{")
     print("\t\tB"+ str(mode) + "_count[idx" + str(mode) + "] += B"+ str(mode) + "_count[idx" + str(mode) + " - 1];" )
     print("\t}")
-    print("\tfor( int i = 0; i < c_size; i++)")
+    print("\tfor( int i = c_size - 1; i >= 0; i--)")
     print("\t{")
     print("\t\t"+ datatypes[mode] + " idx" + str(mode) + " = C_coords[i].idx" + str(mode) + ";")
     print("\t\tint idx = B" + str(mode) + "_count[idx" + str(mode) + "] - 1;")
@@ -408,11 +408,11 @@ int main(int argc, char* argv[]) {
             for i in range(ORDER):
                 print("\t\t\t\tif(A[i].idx" + str(i) + " != A_copy[i].idx" + str(i) + "){")
                 print("\t\t\t\t\tcout << \"Error permuting array: index incorrect: " + str(perm) + ": " + str(sched) + "\" << endl;")
-                print("\t\t\t\t\tbreak;")
+                print("\t\t\t\t\texit(3);")
                 print("\t\t\t\t}")
             print("\t\t\t\tif(A[i].val != A_copy[i].val){")
             print("\t\t\t\t\tcout << \"Error permuting array: value incorrect: " + str(perm) + ": " + str(sched) + "\" << endl;")
-            print("\t\t\t\t\tbreak;")
+            print("\t\t\t\t\texit(3);")
             print("\t\t\t\t}")
 
             print("\t\t\t}")
